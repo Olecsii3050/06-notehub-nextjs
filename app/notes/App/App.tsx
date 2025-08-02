@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { fetchNotes } from "../../services/noteService";
+import { fetchNotes } from "@/lib/api";
 import { useDebouncedCallback } from "use-debounce";
-import NoteList from "../NoteList/NoteList";
-import Paginaition from "../Pagination/Pagination";
-import SearchBox from "../SearchBox/SearchBox";
-import Modal from "../Modal/Modal";
-import NoteForm from "../NoteForm/NoteForm";
-import Loader from "../Loader/Loader";
-import ErrorMessage from "../ErrorMessage/ErrorMessage";
+import NoteList from "../../../components/NoteList/NoteList";
+import Paginaition from "../../../components/Pagination/Pagination";
+import SearchBox from "../../../components/SearchBox/SearchBox";
+import Modal from "../../../components/Modal/Modal";
+import NoteForm from "../../../components/NoteForm/NoteForm";
+import Loader from "../../../components/Loader/Loader";
+import ErrorMessage from "../../../components/ErrorMessage/ErrorMessage";
 import css from "../App/App.module.css";
 
 export default function App() {

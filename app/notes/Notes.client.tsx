@@ -13,7 +13,7 @@ interface NotesClientProps {
   initialNotes: Array<{ id: string; title: string; content: string }>;
 }
 
-const NotesClient: React.FC<NotesClientProps> = ({ initialNotes }) => {
+export default function NotesClient({ initialNotes }: NotesClientProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [notesPerPage] = useState(5);
@@ -21,7 +21,7 @@ const NotesClient: React.FC<NotesClientProps> = ({ initialNotes }) => {
 
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ["notes"],
-    queryFn: fetchNotes,
+    queryFn: () => fetchNotes({ page: 1, perPage: 12 }),
     initialData: initialNotes,
   });
 
@@ -69,6 +69,4 @@ const NotesClient: React.FC<NotesClientProps> = ({ initialNotes }) => {
       )}
     </div>
   );
-};
-
-export default NotesClient;
+}

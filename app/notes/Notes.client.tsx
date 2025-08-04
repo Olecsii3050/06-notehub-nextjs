@@ -1,70 +1,79 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { fetchNotes } from "@/lib/api";
+import { useDebouncedCallback } from "use-debounce";
+import NoteList from "../../components/NoteList/NoteList";
+import Paginaition from "../../components/Pagination/Pagination";
 import SearchBox from "../../components/SearchBox/SearchBox";
-import Pagination from "../../components/Pagination/Pagination";
 import Modal from "../../components/Modal/Modal";
 import NoteForm from "../../components/NoteForm/NoteForm";
-import css from "./NotesClient.module.css";
-import { fetchNotes } from "@/lib/api";
+import Loader from "../../components/Loader/Loader";
+import ErrorMessage from "../../components/ErrorMessage/ErrorMessage";
+import css from "./Notes.module.css";
 
-interface NotesClientProps {
-  initialNotes: Array<{ id: string; title: string; content: string }>;
-}
+export default function App({ initialNotes }) {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [modalIsOpen, setModalIsOpen] = useState(false);
 
-export default function NotesClient({ initialNotes }: NotesClientProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [notesPerPage] = useState(5);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const handleSearch = useDebouncedCallback((search: string) => {
+    setDebouncedSearch(search);
+  }, 300);
 
-  const { data: notes = [], isLoading } = useQuery({
-    queryKey: ["notes"],
-    queryFn: () => fetchNotes({ page: 1, perPage: 12 }),
-    initialData: initialNotes,
-  });
-
-  const filteredNotes = notes.filter((note) =>
-    note.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const indexOfLastNote = currentPage * notesPerPage;
-  const indexOfFirstNote = indexOfLastNote - notesPerPage;
-  const currentNotes = filteredNotes.slice(indexOfFirstNote, indexOfLastNote);
-  const totalPages = Math.ceil(filteredNotes.length / notesPerPage);
-
-  const handlePageChange = (selected: number) => {
-    setCurrentPage(selected);
+  const handleSearchCange = (search: string) => {
+    setSearch(search);
+    setPage(1);
+    handleSearch(search);
   };
 
+  const {
+    data = initialNotes,
+    isLoading,
+    isError,
+    isSuccess,
+  } = useQuery({
+    queryKey: ["notes", page, debouncedSearch],
+    queryFn: () =>
+      fetchNotes({
+        page,
+        perPage: 12,
+        search: debouncedSearch,
+      }),
+    placeholderData: keepPreviousData,
+  });
+
   return (
-    <div className={css.container}>
-      <SearchBox value={searchTerm} onChange={setSearchTerm} />
-      <button onClick={() => setIsModalOpen(true)}>Add Note</button>
-
-      {isLoading ? (
-        <p>Loading...</p>
+    <div className={css.app}>
+      <header className={css.toolbar}>
+        <SearchBox value={search} onChange={handleSearchCange} />
+        {data && data.total_pages > 1 && (
+          <Paginaition
+            currentPage={page}
+            totalPages={data.total_pages}
+            onPageChange={setPage}
+          />
+        )}
+        <button
+          className={css.button}
+          type="button"
+          onClick={() => setModalIsOpen(true)}
+        >
+          Create +
+        </button>
+      </header>
+      {isLoading && <Loader />}
+      {isError && <ErrorMessage />}
+      {isSuccess && data?.data?.length > 0 ? (
+        <NoteList notes={data.data} />
       ) : (
-        <ul>
-          {currentNotes.map((note) => (
-            <li key={note.id}>
-              <h2>{note.title}</h2>
-              <p>{note.content}</p>
-            </li>
-          ))}
-        </ul>
+        <p>No notes found</p>
       )}
-
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-      />
-
-      {isModalOpen && (
-        <Modal onClose={() => setIsModalOpen(false)}>
-          <NoteForm onClose={() => setIsModalOpen(false)} />
+      {modalIsOpen && (
+        <Modal onClose={() => setModalIsOpen(false)}>
+          <NoteForm onClose={() => setModalIsOpen(false)} />
         </Modal>
       )}
     </div>
